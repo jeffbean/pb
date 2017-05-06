@@ -10,7 +10,7 @@ import (
 func Test_DefaultsToInteger(t *testing.T) {
 	value := int64(1000)
 	expected := strconv.Itoa(int(value))
-	actual := Format(value).String()
+	actual := NewFormatter(value, New(1)).String()
 
 	if actual != expected {
 		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
@@ -20,7 +20,7 @@ func Test_DefaultsToInteger(t *testing.T) {
 func Test_CanFormatAsInteger(t *testing.T) {
 	value := int64(1000)
 	expected := strconv.Itoa(int(value))
-	actual := Format(value).To(U_NO).String()
+	actual := NewFormatter(value, New(1, WithUnits(NoUnit))).String()
 
 	if actual != expected {
 		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
@@ -34,13 +34,13 @@ func Test_CanFormatAsBytes(t *testing.T) {
 	}{
 		{v: 1000, e: "1000 B"},
 		{v: 1024, e: "1.00 KiB"},
-		{v: 3*MiB + 140*KiB, e: "3.14 MiB"},
-		{v: 2 * GiB, e: "2.00 GiB"},
-		{v: 2048 * GiB, e: "2.00 TiB"},
+		{v: 3*miB + 140*kiB, e: "3.14 MiB"},
+		{v: 2 * giB, e: "2.00 GiB"},
+		{v: 2048 * giB, e: "2.00 TiB"},
 	}
 
 	for _, input := range inputs {
-		actual := Format(input.v).To(U_BYTES).String()
+		actual := NewFormatter(input.v, New(1, WithUnits(DataSizeUnit))).String()
 		if actual != input.e {
 			t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", input.e, actual))
 		}
@@ -50,7 +50,7 @@ func Test_CanFormatAsBytes(t *testing.T) {
 func Test_CanFormatDuration(t *testing.T) {
 	value := 10 * time.Minute
 	expected := "10m0s"
-	actual := Format(int64(value)).To(U_DURATION).String()
+	actual := NewFormatter(int64(value), New(1, WithUnits(DurationUnit))).String()
 	if actual != expected {
 		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
 	}
@@ -59,7 +59,7 @@ func Test_CanFormatDuration(t *testing.T) {
 func Test_DefaultUnitsWidth(t *testing.T) {
 	value := 10
 	expected := "     10"
-	actual := Format(int64(value)).Width(7).String()
+	actual := NewFormatter(int64(value), New(20, WithWidth(10))).String()
 	if actual != expected {
 		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
 	}

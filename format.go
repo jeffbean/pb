@@ -18,10 +18,10 @@ const (
 )
 
 const (
-	KiB = 1024
-	MiB = 1048576
-	GiB = 1073741824
-	TiB = 1099511627776
+	kiB = 1024
+	miB = 1048576
+	giB = 1073741824
+	tiB = 1099511627776
 )
 
 // FormatOption are option closure for construction on  the unti formatter
@@ -40,7 +40,7 @@ func NewFormatter(i int64, pb *ProgressBar, opts ...FormatOption) *Formatter {
 	f := &Formatter{
 		n:     i,
 		unit:  pb.Units,
-		width: pb.UnitsWidth,
+		width: pb.unitsWidth,
 	}
 	for _, opt := range opts {
 		opt(f)
@@ -74,14 +74,14 @@ func (f *Formatter) String() string {
 // Convert bytes to human readable string. Like a 2 MiB, 64.2 KiB, 52 B
 func formatBytes(i int64) (result string) {
 	switch {
-	case i >= TiB:
-		result = fmt.Sprintf("%.02f TiB", float64(i)/TiB)
-	case i >= GiB:
-		result = fmt.Sprintf("%.02f GiB", float64(i)/GiB)
-	case i >= MiB:
-		result = fmt.Sprintf("%.02f MiB", float64(i)/MiB)
-	case i >= KiB:
-		result = fmt.Sprintf("%.02f KiB", float64(i)/KiB)
+	case i >= tiB:
+		result = fmt.Sprintf("%.02f TiB", float64(i)/tiB)
+	case i >= giB:
+		result = fmt.Sprintf("%.02f GiB", float64(i)/giB)
+	case i >= miB:
+		result = fmt.Sprintf("%.02f MiB", float64(i)/miB)
+	case i >= kiB:
+		result = fmt.Sprintf("%.02f KiB", float64(i)/kiB)
 	default:
 		result = fmt.Sprintf("%d B", i)
 	}

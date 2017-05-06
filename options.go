@@ -68,3 +68,10 @@ func WithWidth(width int) Option {
 		pb.ForceWidth = true
 	}
 }
+
+// WithUnitsWidth sets the bar width
+func WithUnitsWidth(width int) Option {
+	return func(pb *ProgressBar) {
+		pb.unitsWidth = width
+	}
+}

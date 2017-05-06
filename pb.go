@@ -53,7 +53,7 @@ type ProgressBar struct {
 	AutoStat                         bool
 
 	// Default width for the time box.
-	UnitsWidth   int
+	unitsWidth   int
 	TimeBoxWidth int
 
 	output       io.Writer
