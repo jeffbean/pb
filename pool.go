@@ -35,8 +35,8 @@ func (p *Pool) Add(pbs ...*ProgressBar) {
 	p.m.Lock()
 	defer p.m.Unlock()
 	for _, bar := range pbs {
-		bar.ManualUpdate = true
-		bar.NotPrint = true
+		bar.config.DisableAutoUpdate = true
+		bar.config.NotPrint = true
 		bar.Start()
 		p.bars = append(p.bars, bar)
 	}

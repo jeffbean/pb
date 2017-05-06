@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -40,17 +41,12 @@ type window struct {
 type ProgressBar struct {
 	current int64 // current must be first member of struct (https://code.google.com/p/go/issues/detail?id=5278)
 
-	Total                            int64
-	ShowPercent, ShowCounters        bool
-	ShowSpeed, ShowTimeLeft, ShowBar bool
-	ShowFinalTime                    bool
-	Callback                         Callback
-	NotPrint                         bool
-	Units                            Units
-	Width                            int
-	ForceWidth                       bool
-	ManualUpdate                     bool
-	AutoStat                         bool
+	config Config
+
+	goalValue int64
+	Callback  Callback
+	Units     Units
+	Width     int
 
 	// Default width for the time box.
 	TimeBoxWidth int
@@ -85,22 +81,18 @@ type ProgressBar struct {
 
 // New Creates a new progress bar object
 func New(total int, opts ...Option) *ProgressBar {
-	return newProgressBar(int64(total), opts...)
+	opts = append(opts, WithGoalValue(total))
+	return NewConfig().Build(opts...)
 }
 
-func newProgressBar(total int64, opts ...Option) *ProgressBar {
+func newProgressBar(config Config, opts ...Option) *ProgressBar {
 	pb := &ProgressBar{
-		Total:         total,
-		refreshRate:   _defaultRefreshRate,
-		ShowPercent:   true,
-		ShowCounters:  true,
-		ShowBar:       true,
-		ShowTimeLeft:  true,
-		ShowFinalTime: true,
-		Units:         NoUnit,
-		ManualUpdate:  false,
-		finish:        make(chan struct{}),
-		outFormat:     _defaultFormat,
+		config:      config,
+		Units:       NoUnit,
+		output:      os.Stdout,
+		refreshRate: _defaultRefreshRate,
+		finish:      make(chan struct{}),
+		outFormat:   _defaultFormat,
 	}
 	for _, opt := range opts {
 		opt(pb)
@@ -108,16 +100,16 @@ func newProgressBar(total int64, opts ...Option) *ProgressBar {
 	return pb
 }
 
-// Start print
+// Start the progress twards the goal, this will start a timer to estimate the time.
 func (pb *ProgressBar) Start() *ProgressBar {
 	pb.startTime = time.Now()
 	pb.startValue = atomic.LoadInt64(&pb.current)
-	if pb.Total == 0 {
-		pb.ShowTimeLeft = false
-		pb.ShowPercent = false
-		pb.AutoStat = false
+	if pb.goalValue == 0 {
+		pb.config.ShowTimeLeft = false
+		pb.config.ShowPercent = false
+		pb.config.AutoStat = false
 	}
-	if !pb.ManualUpdate {
+	if !pb.config.DisableAutoUpdate {
 		pb.Update() // Initial printing of the bar before running the bar refresher.
 		go pb.refresher()
 	}
@@ -145,14 +137,13 @@ func (pb *ProgressBar) Format(format string) *ProgressBar {
 }
 
 // Increment current value
-func (pb *ProgressBar) Increment() int {
-	return pb.Add(1)
+func (pb *ProgressBar) Increment() {
+	pb.Add(1)
 }
 
 // Get current value
-func (pb *ProgressBar) Get() int64 {
-	c := atomic.LoadInt64(&pb.current)
-	return c
+func (pb *ProgressBar) Get() int {
+	return int(atomic.LoadInt64(&pb.current))
 }
 
 // Set current value
@@ -161,12 +152,8 @@ func (pb *ProgressBar) Set(current int) {
 }
 
 // Add to current value
-func (pb *ProgressBar) Add(add int) int {
-	return int(pb.add64(int64(add)))
-}
-
-func (pb *ProgressBar) add64(add int64) int64 {
-	return atomic.AddInt64(&pb.current, add)
+func (pb *ProgressBar) Add(add int) {
+	atomic.AddInt64(&pb.current, int64(add))
 }
 
 // Finish stops the refresh updates to the output writer.
@@ -180,7 +167,7 @@ func (pb *ProgressBar) Finish() {
 		switch {
 		case pb.output != nil:
 			fmt.Fprintln(pb.output)
-		case !pb.NotPrint:
+		case !pb.config.NotPrint:
 			fmt.Println()
 		}
 		pb.isFinish = true
@@ -230,10 +217,10 @@ func (pb *ProgressBar) write(current int64) {
 	var percentBox, countersBox, timeLeftBox, speedBox, barBox, end, out string
 
 	// percents
-	if pb.ShowPercent {
+	if pb.config.ShowPercent {
 		var percent float64
-		if pb.Total > 0 {
-			percent = float64(current) / (float64(pb.Total) / float64(100))
+		if pb.goalValue > 0 {
+			percent = float64(current) / (float64(pb.goalValue) / float64(100))
 		} else {
 			percent = float64(current) / float64(100)
 		}
@@ -241,10 +228,10 @@ func (pb *ProgressBar) write(current int64) {
 	}
 
 	// counters
-	if pb.ShowCounters {
+	if pb.config.ShowCounters {
 		current := NewFormatter(current, pb)
-		if pb.Total > 0 {
-			total := NewFormatter(pb.Total, pb)
+		if pb.goalValue > 0 {
+			total := NewFormatter(pb.goalValue, pb)
 			countersBox = fmt.Sprintf(" %s / %s ", current, total)
 		} else {
 			countersBox = fmt.Sprintf(" %s / ? ", current)
@@ -256,17 +243,17 @@ func (pb *ProgressBar) write(current int64) {
 	currentFromStart := current - pb.startValue
 	select {
 	case <-pb.finish:
-		if pb.ShowFinalTime {
+		if pb.config.ShowFinalTime {
 			var left time.Duration
 			left = (fromStart / time.Second) * time.Second
 			timeLeftBox = fmt.Sprintf(" %s", left.String())
 		}
 	default:
-		if pb.ShowTimeLeft && currentFromStart > 0 {
+		if pb.config.ShowTimeLeft && currentFromStart > 0 {
 			perEntry := fromStart / time.Duration(currentFromStart)
 			var left time.Duration
-			if pb.Total > 0 {
-				left = time.Duration(pb.Total-currentFromStart) * perEntry
+			if pb.goalValue > 0 {
+				left = time.Duration(pb.goalValue-currentFromStart) * perEntry
 				left = (left / time.Second) * time.Second
 			} else {
 				left = time.Duration(currentFromStart) * perEntry
@@ -282,7 +269,7 @@ func (pb *ProgressBar) write(current int64) {
 	}
 
 	// speed
-	if pb.ShowSpeed && currentFromStart > 0 {
+	if pb.config.ShowSpeed && currentFromStart > 0 {
 		fromStart := time.Now().Sub(pb.startTime)
 		speed := float64(currentFromStart) / (float64(fromStart) / float64(time.Second))
 		speedBox = " " + NewFormatter(int64(speed), pb, PerSec()).String()
@@ -290,11 +277,11 @@ func (pb *ProgressBar) write(current int64) {
 
 	barWidth := escapeAwareRuneCountInString(countersBox + pb.BarStart + pb.BarEnd + percentBox + timeLeftBox + speedBox + pb.prefix + pb.postfix)
 	// bar
-	if pb.ShowBar {
+	if pb.config.ShowBar {
 		size := width - barWidth
 		if size > 0 {
-			if pb.Total > 0 {
-				curCount := int(math.Ceil((float64(current) / float64(pb.Total)) * float64(size)))
+			if pb.goalValue > 0 {
+				curCount := int(math.Ceil((float64(current) / float64(pb.goalValue)) * float64(size)))
 				emptCount := size - curCount
 				barBox = pb.BarStart
 				if emptCount < 0 {
@@ -342,7 +329,7 @@ func (pb *ProgressBar) write(current int64) {
 		fmt.Fprint(pb.output, "\r"+out+end)
 	case pb.Callback != nil:
 		pb.Callback(out + end)
-	case !pb.NotPrint:
+	case !pb.config.NotPrint:
 		fmt.Print("\r" + out + end)
 	}
 }
@@ -354,7 +341,7 @@ func GetTerminalWidth() (int, error) {
 
 // GetWidth returns the witdh of the bar
 func (pb *ProgressBar) GetWidth() int {
-	if pb.ForceWidth {
+	if pb.config.ForceWidth {
 		return pb.Width
 	}
 
@@ -374,11 +361,12 @@ func (pb *ProgressBar) Update() {
 		pb.write(c)
 		pb.currentValue = c
 	}
-	if pb.AutoStat {
+	fmt.Printf("autostat set: %v\n", pb.config.AutoStat)
+	if pb.config.AutoStat {
 		if c == 0 {
 			pb.startTime = time.Now()
 			pb.startValue = 0
-		} else if c >= pb.Total && pb.isFinish != true {
+		} else if c >= pb.goalValue && pb.isFinish != true {
 			pb.Finish()
 		}
 	}

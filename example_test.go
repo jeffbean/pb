@@ -8,18 +8,13 @@ import (
 
 func Example() {
 	count := 5000
-	bar := pb.New(count)
-
-	// show percents (by default already true)
-	bar.ShowPercent = true
-
-	// show bar (by default already true)
-	bar.ShowBar = true
-
-	bar.ShowCounters = true
-
-	bar.ShowTimeLeft = true
-
+	cfg := pb.Config{
+		ShowPercent:  true,
+		ShowBar:      true,
+		ShowCounters: true,
+		ShowTimeLeft: true,
+	}
+	bar := cfg.Build(pb.WithGoalValue(count))
 	// and start
 	bar.Start()
 	for i := 0; i < count; i++ {

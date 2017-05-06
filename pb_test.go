@@ -2,6 +2,7 @@ package pb
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -13,13 +14,67 @@ import (
 )
 
 func Test_IncrementAddsOne(t *testing.T) {
-	count := 5000
-	bar := New(count)
-	expected := 1
-	actual := bar.Increment()
+	tests := []struct {
+		goal     int
+		incCount int
+		want     int
+	}{
+		{5000, 20, 20},
+		{10, 25, 25},
+		{0, 10, 10},
+		{-5, 2, 2},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Increment count %v", tt.incCount), func(t *testing.T) {
+			bar := New(tt.goal)
+			for i := 0; i < tt.incCount; i++ {
+				bar.Increment()
+			}
+			assert.Equal(t, tt.want, bar.Get(), "Increment should be adding by 1")
+		})
+	}
+}
 
-	if actual != expected {
-		t.Errorf("Expected {%d} was {%d}", expected, actual)
+func TestProgressSet(t *testing.T) {
+	tests := []struct {
+		goal int
+		set  int
+		want int
+	}{
+		{5000, 20, 20},
+		{10, 25, 25},
+		{0, 10, 10},
+		{-5, 2, 2},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Setting %v", tt.set), func(t *testing.T) {
+			bar := New(tt.goal)
+			bar.Set(tt.set)
+			assert.Equal(t, tt.want, bar.Get(), "Increment should be adding by 1")
+		})
+	}
+}
+
+func TestProgressAdd(t *testing.T) {
+	tests := []struct {
+		goal     int
+		addCount int
+		addValue int
+		want     int
+	}{
+		{5000, 5, 2, 10},
+		{10, 100, 3, 300},
+		{1800, 24, 75, 1800},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Setting %v", tt.addCount*tt.addValue), func(t *testing.T) {
+			bar := New(tt.goal)
+			bar.Start()
+			for i := 0; i < tt.addCount; i++ {
+				bar.Add(tt.addValue)
+			}
+			assert.Equal(t, tt.want, bar.Get(), "Increment should be adding by 1")
+		})
 	}
 }
 
@@ -48,8 +103,8 @@ func Test_MultipleFinish(t *testing.T) {
 	bar.Finish()
 	bar.Finish()
 
-	assert.Equal(t, int64(2000), bar.Get())
-	assert.Equal(t, int64(5000), bar.Total)
+	assert.Equal(t, 2000, bar.Get())
+	assert.Equal(t, int64(5000), bar.goalValue)
 }
 
 func Test_Format(t *testing.T) {
@@ -70,18 +125,29 @@ func Test_Format(t *testing.T) {
 }
 
 func Test_AutoStat(t *testing.T) {
-	bar := New(5)
-	bar.AutoStat = true
-	bar.Start()
-	time.Sleep(2 * time.Second)
-	//real start work
-	for i := 0; i < 5; i++ {
-		time.Sleep(500 * time.Millisecond)
-		bar.Increment()
+	tests := []struct {
+		goal      int
+		workCount int
+		addValue  int
+		want      int
+	}{
+		{5000, 5, 2, 10},
+		{10, 100, 3, 300},
+		{1800, 24, 75, 1800},
 	}
-	//real finish work
-	time.Sleep(2 * time.Second)
-	bar.Finish()
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Setting %v", tt.workCount*tt.addValue), func(t *testing.T) {
+			bar := Config{
+				AutoStat: true,
+			}.Build(WithGoalValue(5))
+			bar.Start()
+
+			for i := 0; i < tt.workCount; i++ {
+				bar.Add(tt.addValue)
+			}
+			assert.Equal(t, tt.want, bar.Get(), "Increment should be adding by 1")
+		})
+	}
 }
 
 func Test_Finish_PrintNewline(t *testing.T) {

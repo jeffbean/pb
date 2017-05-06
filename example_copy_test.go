@@ -65,8 +65,10 @@ func Example_copy() {
 	defer dest.Close()
 
 	// create bar
-	bar := pb.New(int(sourceSize), pb.WithUnits(pb.DataSizeUnit), pb.WithRefreshRate(time.Millisecond*10))
-	bar.ShowSpeed = true
+	bar := pb.New(int(sourceSize),
+		pb.WithUnits(pb.DataSizeUnit),
+		pb.WithRefreshRate(time.Millisecond*10),
+	)
 	bar.Start()
 
 	// create proxy reader
