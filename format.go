@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Units represents different types of untis supported by the Progress bar
 type Units int
 
 const (

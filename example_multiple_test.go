@@ -10,9 +10,9 @@ import (
 
 func Example_multiple() {
 	// create bars
-	first := pb.New(200).Prefix("First ")
-	second := pb.New(200).Prefix("Second ")
-	third := pb.New(200).Prefix("Third ")
+	first := pb.New(200, pb.WithPrefix("First "))
+	second := pb.New(200, pb.WithPrefix("Second "))
+	third := pb.New(200, pb.WithPrefix("Third "))
 	// start pool
 	pool, err := pb.StartPool(first, second, third)
 	if err != nil {

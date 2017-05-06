@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/cheggaaa/pb.v1"
+	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
 func Example_copy() {
@@ -65,7 +65,7 @@ func Example_copy() {
 	defer dest.Close()
 
 	// create bar
-	bar := pb.New(int(sourceSize)).SetUnits(pb.U_BYTES).SetRefreshRate(time.Millisecond * 10)
+	bar := pb.New(int(sourceSize), pb.WithUnits(pb.U_BYTES), pb.WithRefreshRate(time.Millisecond*10))
 	bar.ShowSpeed = true
 	bar.Start()
 

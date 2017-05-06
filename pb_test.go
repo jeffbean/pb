@@ -3,11 +3,13 @@ package pb
 import (
 	"bytes"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_IncrementAddsOne(t *testing.T) {
@@ -21,17 +23,22 @@ func Test_IncrementAddsOne(t *testing.T) {
 	}
 }
 
-func Test_Width(t *testing.T) {
-	count := 5000
-	bar := New(count)
-	width := 100
-	bar.SetWidth(100).Callback = func(out string) {
-		if len(out) != width {
-			t.Errorf("Bar width expected {%d} was {%d}", len(out), width)
-		}
-	}
+func TestWriteRace(t *testing.T) {
+	outBuffer := &bytes.Buffer{}
+	totalCount := 20
+	bar := New(totalCount)
+	bar.Output = outBuffer
 	bar.Start()
-	bar.Increment()
+	var wg sync.WaitGroup
+	for i := 0; i < totalCount; i++ {
+		wg.Add(1)
+		go func() {
+			bar.Increment()
+			time.Sleep(250 * time.Millisecond)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 	bar.Finish()
 }
 
@@ -40,6 +47,9 @@ func Test_MultipleFinish(t *testing.T) {
 	bar.Add(2000)
 	bar.Finish()
 	bar.Finish()
+
+	assert.Equal(t, int64(2000), bar.Get())
+	assert.Equal(t, int64(5000), bar.Total)
 }
 
 func Test_Format(t *testing.T) {

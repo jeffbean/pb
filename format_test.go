@@ -13,7 +13,7 @@ func Test_DefaultsToInteger(t *testing.T) {
 	actual := Format(value).String()
 
 	if actual != expected {
-		t.Error(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
+		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
 	}
 }
 
@@ -23,7 +23,7 @@ func Test_CanFormatAsInteger(t *testing.T) {
 	actual := Format(value).To(U_NO).String()
 
 	if actual != expected {
-		t.Error(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
+		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
 	}
 }
 
@@ -42,7 +42,7 @@ func Test_CanFormatAsBytes(t *testing.T) {
 	for _, input := range inputs {
 		actual := Format(input.v).To(U_BYTES).String()
 		if actual != input.e {
-			t.Error(fmt.Sprintf("Expected {%s} was {%s}", input.e, actual))
+			t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", input.e, actual))
 		}
 	}
 }
@@ -52,7 +52,7 @@ func Test_CanFormatDuration(t *testing.T) {
 	expected := "10m0s"
 	actual := Format(int64(value)).To(U_DURATION).String()
 	if actual != expected {
-		t.Error(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
+		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
 	}
 }
 
@@ -61,6 +61,6 @@ func Test_DefaultUnitsWidth(t *testing.T) {
 	expected := "     10"
 	actual := Format(int64(value)).Width(7).String()
 	if actual != expected {
-		t.Error(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
+		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
 	}
 }
