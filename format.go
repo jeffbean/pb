@@ -9,12 +9,12 @@ import (
 type Units int
 
 const (
-	// U_NO are default units, they represent a simple value and are not formatted at all.
-	U_NO Units = iota
-	// U_BYTES units are formatted in a human readable way (b, Bb, Mb, ...)
-	U_BYTES
-	// U_DURATION units are formatted in a human readable way (3h14m15s)
-	U_DURATION
+	// NoUnit are default units, they represent a simple value and are not formatted at all.
+	NoUnit Units = iota
+	// DataSizeUnit units are formatted in a human readable way (b, Bb, Mb, ...)
+	DataSizeUnit
+	// DurationUnit units are formatted in a human readable way (3h14m15s)
+	DurationUnit
 )
 
 const (
@@ -24,37 +24,43 @@ const (
 	TiB = 1099511627776
 )
 
-func Format(i int64) *formatter {
-	return &formatter{n: i}
-}
+// FormatOption are option closure for construction on  the unti formatter
+type FormatOption func(f *Formatter)
 
-type formatter struct {
+// Formatter is a struct to print on the progress bar without dealing with unit conversions
+type Formatter struct {
 	n      int64
 	unit   Units
 	width  int
 	perSec bool
 }
 
-func (f *formatter) To(unit Units) *formatter {
-	f.unit = unit
+// NewFormatter returns a unit formatter
+func NewFormatter(i int64, pb *ProgressBar, opts ...FormatOption) *Formatter {
+	f := &Formatter{
+		n:     i,
+		unit:  pb.Units,
+		width: pb.UnitsWidth,
+	}
+	for _, opt := range opts {
+		opt(f)
+	}
 	return f
 }
 
-func (f *formatter) Width(width int) *formatter {
-	f.width = width
-	return f
+// PerSec adds an extra "/s" in the string formatting
+func PerSec() FormatOption {
+	return func(f *Formatter) {
+		f.perSec = true
+	}
 }
 
-func (f *formatter) PerSec() *formatter {
-	f.perSec = true
-	return f
-}
-
-func (f *formatter) String() (out string) {
+func (f *Formatter) String() string {
+	var out string
 	switch f.unit {
-	case U_BYTES:
+	case DataSizeUnit:
 		out = formatBytes(f.n)
-	case U_DURATION:
+	case DurationUnit:
 		out = formatDuration(f.n)
 	default:
 		out = fmt.Sprintf(fmt.Sprintf("%%%dd", f.width), f.n)
@@ -62,7 +68,7 @@ func (f *formatter) String() (out string) {
 	if f.perSec {
 		out += "/s"
 	}
-	return
+	return out
 }
 
 // Convert bytes to human readable string. Like a 2 MiB, 64.2 KiB, 52 B

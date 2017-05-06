@@ -21,7 +21,7 @@ const (
 
 var tty *os.File
 
-var ErrPoolWasStarted = errors.New("Bar pool was started")
+var errPoolWasStarted = errors.New("Bar pool was started")
 
 var echoLocked bool
 var echoLockMutex sync.Mutex
@@ -58,7 +58,7 @@ func lockEcho() (quit chan int, err error) {
 	echoLockMutex.Lock()
 	defer echoLockMutex.Unlock()
 	if echoLocked {
-		err = ErrPoolWasStarted
+		err = errPoolWasStarted
 		return
 	}
 	echoLocked = true

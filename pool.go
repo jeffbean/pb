@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Create and start new pool with given bars
+// StartPool Create and start new pool with given bars
 // You need call pool.Stop() after work
 func StartPool(pbs ...*ProgressBar) (pool *Pool, err error) {
 	pool = new(Pool)
@@ -19,8 +19,9 @@ func StartPool(pbs ...*ProgressBar) (pool *Pool, err error) {
 	return
 }
 
+// Pool is a group of ProgressBars
 type Pool struct {
-	Output        io.Writer
+	output        io.Writer
 	RefreshRate   time.Duration
 	bars          []*ProgressBar
 	lastBarsCount int
@@ -42,7 +43,7 @@ func (p *Pool) Add(pbs ...*ProgressBar) {
 }
 
 func (p *Pool) start() (err error) {
-	p.RefreshRate = DefaultRefreshRate
+	p.RefreshRate = _defaultRefreshRate
 	quit, err := lockEcho()
 	if err != nil {
 		return
@@ -70,7 +71,7 @@ func (p *Pool) writer(finish chan int) {
 	}
 }
 
-// Restore terminal state and close pool
+// Stop Restore terminal state and close pool
 func (p *Pool) Stop() error {
 	// Wait until one final refresh has passed.
 	time.Sleep(p.RefreshRate)

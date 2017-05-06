@@ -4,7 +4,7 @@ import (
 	"io"
 )
 
-// It's proxy reader, implement io.Reader
+// Reader It's proxy reader, implement io.Reader
 type Reader struct {
 	io.Reader
 	bar *ProgressBar

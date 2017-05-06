@@ -27,7 +27,7 @@ func TestWriteRace(t *testing.T) {
 	outBuffer := &bytes.Buffer{}
 	totalCount := 20
 	bar := New(totalCount)
-	bar.Output = outBuffer
+	bar.output = outBuffer
 	bar.Start()
 	var wg sync.WaitGroup
 	for i := 0; i < totalCount; i++ {
@@ -85,9 +85,10 @@ func Test_AutoStat(t *testing.T) {
 }
 
 func Test_Finish_PrintNewline(t *testing.T) {
-	bar := New(5)
 	buf := &bytes.Buffer{}
-	bar.Output = buf
+	bar := New(5, WithOutput(buf))
+
+	bar.output = buf
 	bar.Finish()
 
 	expected := "\n"
@@ -101,7 +102,7 @@ func Test_Finish_PrintNewline(t *testing.T) {
 func Test_FinishPrint(t *testing.T) {
 	bar := New(5)
 	buf := &bytes.Buffer{}
-	bar.Output = buf
+	bar.output = buf
 	bar.FinishPrint("foo")
 
 	expected := "foo\n"
