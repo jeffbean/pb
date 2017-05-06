@@ -59,7 +59,7 @@ func Test_CanFormatDuration(t *testing.T) {
 func Test_DefaultUnitsWidth(t *testing.T) {
 	value := 10
 	expected := "     10"
-	actual := NewFormatter(int64(value), New(20, WithWidth(10))).String()
+	actual := NewFormatter(int64(value), New(20, WithUnitsWidth(7))).String()
 	if actual != expected {
 		t.Errorf(fmt.Sprintf("Expected {%s} was {%s}", expected, actual))
 	}
